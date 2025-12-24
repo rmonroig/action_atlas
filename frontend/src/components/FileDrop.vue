@@ -47,7 +47,7 @@ const validateAndEmit = (file) => {
 <template>
   <div
     class="drop-zone"
-    :class="{ 'active': isDragging }"
+    :class="{ active: isDragging }"
     @dragenter="handleDragEnter"
     @dragover.prevent
     @dragleave="handleDragLeave"
@@ -61,55 +61,133 @@ const validateAndEmit = (file) => {
       accept=".mp3,audio/mpeg"
       hidden
     />
-    <div class="icon">
-      🎵
+
+    <div class="icon-wrapper">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="icon"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="1.5"
+          d="M9 19V6l12-2v13"
+        />
+        <circle cx="6" cy="18" r="3" />
+        <circle cx="18" cy="16" r="3" />
+      </svg>
     </div>
-    <p class="instruction">
-      Drag & Drop your MP3 here
-      <br />
-      <span class="sub-text">or click to browse</span>
+
+    <p class="title">Upload audio file</p>
+    <p class="subtitle">
+      Drag & drop your MP3 here or <span>browse files</span>
     </p>
   </div>
 </template>
 
+
 <style scoped>
 .drop-zone {
-  border: 2px dashed var(--border-color);
-  border-radius: 16px;
-  padding: 4rem 2rem;
-  background: rgba(255, 255, 255, 0.02);
+  position: relative;
+  border-radius: 20px;
+  padding: 4.5rem 2rem;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.06),
+    rgba(255, 255, 255, 0.02)
+  );
+  backdrop-filter: blur(12px);
+  border: 1px dashed rgba(255, 255, 255, 0.15);
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.35s ease;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.drop-zone::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    120deg,
+    transparent,
+    rgba(56, 189, 248, 0.4),
+    transparent
+  );
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  pointer-events: none;
 }
 
 .drop-zone:hover,
 .drop-zone.active {
   border-color: var(--accent-primary);
-  background: rgba(56, 189, 248, 0.05);
-  transform: scale(1.01);
+  transform: translateY(-2px) scale(1.01);
+}
+
+.drop-zone:hover::before,
+.drop-zone.active::before {
+  opacity: 1;
+}
+
+.drop-zone.active {
+  animation: pulse 1.6s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(56, 189, 248, 0.35);
+  }
+  70% {
+    box-shadow: 0 0 0 18px rgba(56, 189, 248, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(56, 189, 248, 0);
+  }
+}
+
+.icon-wrapper {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: rgba(56, 189, 248, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.5rem;
 }
 
 .icon {
-  font-size: 4rem;
-  margin-bottom: 1rem;
-  filter: drop-shadow(0 0 20px rgba(56, 189, 248, 0.2));
+  width: 36px;
+  height: 36px;
+  color: var(--accent-primary);
 }
 
-.instruction {
-  font-size: 1.2rem;
-  font-weight: 500;
+.title {
+  font-size: 1.25rem;
+  font-weight: 600;
   color: var(--text-primary);
+  margin: 0 0 0.5rem;
+}
+
+.subtitle {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
   margin: 0;
 }
 
-.sub-text {
-  font-size: 0.9rem;
-  color: var(--text-secondary);
-  font-weight: 400;
+.subtitle span {
+  color: var(--accent-primary);
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
+
 </style>
