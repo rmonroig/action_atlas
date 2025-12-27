@@ -38,7 +38,7 @@ const handleFileSelected = async (file) => {
       headers['Authorization'] = `Bearer ${token}`;
     }
 
-    const response = await fetch('http://localhost:3000/upload', {
+    const response = await fetch('http://localhost:8080/upload', {
       method: 'POST',
       headers: headers,
       body: formData,

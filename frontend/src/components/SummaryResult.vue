@@ -34,7 +34,7 @@ const formatMarkdown = (text) => {
         <span class="filename">{{ result.filename }}</span>
       </div>
       <div class="header-actions">
-        <a :href="`http://localhost:3000/export-pdf/${result.meetingId}`" class="download-btn" target="_blank">
+        <a :href="`http://localhost:8080/export-pdf/${result.meetingId}`" class="download-btn" target="_blank">
           <span class="icon">📥</span> PDF Summary
         </a>
         <span class="badge">Analysis Complete</span>

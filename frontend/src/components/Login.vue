@@ -102,7 +102,7 @@ async function onSubmit() {
   error.value = '';
   
   try {
-    const response = await axios.post('http://localhost:3000/api/auth/login', {
+    const response = await axios.post('http://localhost:8080/api/auth/login', {
       email: email.value,
       password: password.value
     });
@@ -121,7 +121,7 @@ async function onSubmit() {
 }
 
 function loginWithGoogle() {
-  window.location.href = 'http://localhost:3000/api/auth/google';
+  window.location.href = 'http://localhost:8080/api/auth/google';
 }
 </script>
 

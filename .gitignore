@@ -1,4 +1,6 @@
 # Logs
+backend/uploads
+backend/.env
 logs
 *.log
 npm-debug.log*
@@ -9,14 +11,12 @@ lerna-debug.log*
 
 backend/node_modules
 frontend/node_modules
-backend/uploads/**
 !.keep
-backend/.env
 dist
 dist-ssr
 *.local
 
-backend/.env
+
 
 # Editor directories and files
 .vscode/*
