@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const FormData = require('form-data');
 
-const API_URL = 'http://localhost:3000';
+const API_URL = 'http://localhost:8080';
 const testUser = {
     email: `history_verify_${Date.now()}@example.com`,
     password: 'password123'

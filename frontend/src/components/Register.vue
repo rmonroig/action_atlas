@@ -128,7 +128,7 @@ async function onSubmit() {
   error.value = '';
   
   try {
-    await axios.post('http://localhost:3000/api/auth/register', {
+    await axios.post('http://localhost:8080/api/auth/register', {
       email: email.value,
       password: password.value
     });
@@ -143,7 +143,7 @@ async function onSubmit() {
 }
 
 function loginWithGoogle() {
-  window.location.href = 'http://localhost:3000/api/auth/google';
+  window.location.href = 'http://localhost:8080/api/auth/google';
 }
 </script>
 

@@ -6,7 +6,7 @@ const router = useRouter();
 const handleLogout = async () => {
   try {
     const token = localStorage.getItem('token');
-    await fetch('http://localhost:3000/api/auth/logout', {
+    await fetch('http://localhost:8080/api/auth/logout', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`

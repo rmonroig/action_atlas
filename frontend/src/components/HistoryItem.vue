@@ -53,7 +53,7 @@ const formatDate = (dateString) => {
       </div>
 
       <div class="actions-row">
-        <a :href="`http://localhost:3000/export-pdf/${item.meetingId}`" class="secondary-btn download-btn" target="_blank">
+        <a :href="`http://localhost:8080/export-pdf/${item.meetingId}`" class="secondary-btn download-btn" target="_blank">
           📥 Download PDF
         </a>
         <button @click="showTranscript = !showTranscript" class="secondary-btn">

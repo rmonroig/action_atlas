@@ -11,7 +11,7 @@ const fetchHistory = async () => {
 
   isLoadingHistory.value = true;
   try {
-    const response = await fetch('http://localhost:3000/api/history', {
+    const response = await fetch('http://localhost:8080/api/history', {
       headers: {
         'Authorization': `Bearer ${token}`
       }

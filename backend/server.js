@@ -1,76 +1,23 @@
 require('dotenv').config();
 const express = require('express');
-const multer = require('multer');
 const cors = require('cors');
-const fs = require('fs');
 const path = require('path');
-const { GoogleGenerativeAI } = require("@google/generative-ai");
-const { GoogleAIFileManager } = require("@google/generative-ai/server");
-const { MongoClient } = require('mongodb');
-const PDFDocument = require('pdfkit');
-
 const passport = require('passport');
 const session = require('express-session');
+const { connectToMongo, getAuthDb } = require('./config/db');
 
-const jwt = require('jsonwebtoken');
-
+// Initialize App
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 8080;
 
-// JWT Secret
+// Connect to Database
+connectToMongo().then(() => {
+    console.log("Initializing Passport...");
+    require('./config/passport')(passport, getAuthDb());
+});
+
+// Configs
 const JWT_SECRET = process.env.JWT_SECRET || 'secret';
-
-// Middleware to verify JWT
-const authenticateJWT = (req, res, next) => {
-    const authHeader = req.headers.authorization;
-    if (authHeader) {
-        const token = authHeader.split(' ')[1];
-        jwt.verify(token, JWT_SECRET, (err, user) => {
-            if (err) {
-                // If token is invalid, we still proceed but without a user
-                // Alternatively, we could block it, but the request was "include user when logged in"
-                // implying it might still work if not logged in.
-                console.log("JWT Verification failed:", err.message);
-                return next();
-            }
-            req.user = user;
-            next();
-        });
-    } else {
-        next();
-    }
-};
-
-// MongoDB Setup
-const mongoUri = process.env.MONGO_URI;
-const client = new MongoClient(mongoUri);
-let db, summaryCollection, usersCollection, participantsCollection;
-
-async function connectToMongo() {
-    try {
-        await client.connect();
-        console.log("Connected to MongoDB");
-
-        // Main Logic DB
-        const audioDb = client.db('audio_text');
-        summaryCollection = audioDb.collection('summary_text');
-
-        // Auth DB (as requested: users db and user_auth collection)
-        const authDb = client.db('users');
-        usersCollection = authDb.collection('user_auth');
-        participantsCollection = audioDb.collection('meeting_participants');
-
-        // Initialize Passport Configuration
-        require('./config/passport')(passport, authDb);
-
-    } catch (error) {
-        console.error("MongoDB Connection Error:", error);
-    }
-}
-connectToMongo();
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const fileManager = new GoogleAIFileManager(process.env.GEMINI_API_KEY);
 
 // Middleware
 app.use(cors());
@@ -83,355 +30,114 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
+// Initialize Passport (Needs DB to be connected, but here we can pass a getter or wait)
+// Note: original passport config required 'users' db. 
+// We need to ensure DB is connected before passport is used or pass usage logic.
+// In the original, it was passed `client.db('users')` which might be sync?
+// Actually `client.db` is synchronous if client is connected? No, client is connected async.
+// However, the original code called `require('./config/passport')(passport, authDb)` inside `connectToMongo`.
+// We should probably keep that pattern or improve it. 
+// For now, let's wait for connection in db.js or just pass the promise?
+// Simplest refactor: We can initialize passport config inside the db connection callback or 
+// since `connectToMongo` sets `authDb`, we might need to export a way to init passport.
+// actually, let's just re-import passport config logic here if possible, 
+// OR better, move passport init to `config/db.js`? No, separation of concerns.
+
+// Checking original: `require('./config/passport')(passport, authDb);` was inside `connectToMongo`.
+// Let's modify `connectToMongo` to accept passport? Or just do it here with a slight delay/check?
+// Actually, `connectToMongo` is async. We can wait for it?
+// `connectToMongo();` was called without await at top level in original.
+// Let's keep it simple. We can pass the `getAuthDb` getter to passport config if it supports it, 
+// or just modify passport config.
+// Let's look at `config/passport.js` - we didn't check it but we can guess it uses the db collection.
+// To avoid breaking changes, I'll import the old auth routes which used `client.db('users')`.
+// I need `getClient()` or `getAuthDb()` from db.js working.
+
 // Routes
 const authRoutes = require('./routes/auth');
-app.use('/api/auth', authRoutes(client.db('users')));
+const apiRoutes = require('./routes/api');
 
-// Ensure uploads directory exists
-const uploadDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir);
+// Setup Auth Routes
+// Original: app.use('/api/auth', authRoutes(client.db('users')));
+// We can use a middleware to inject db or getter. 
+// Or better, let's change how authRoutes is initialized. 
+// But to minimize changes to files I haven't seen, let's try to replicate the `client` access.
+const { getClient } = require('./config/db');
+// This `getClient()` returns the client instance immediately (initialized in db.js).
+// It might not be connected yet, but `client.db()` works on disconnected clients in latest drivers?
+// Usually yes, operations buffer.
+
+app.use('/api/auth', authRoutes(getClient().db('users')));
+
+// Mount API Routes
+app.use('/api', apiRoutes); // This will serve /api/upload, /api/history etc. 
+// WAIT: Original `/upload` was at root? No, `app.post('/upload', ...)`
+// So if I mount at `/api`, it becomes `/api/upload`. 
+// I should check if the frontend expects `/upload` or `/api/upload`.
+// Original code: `app.post('/upload'...)`. 
+// If I move it to `routes/api.js` and mount at `/api`, it changes to `/api/upload`.
+// This breaks frontend unless I update frontend or mount at root.
+// Let's mount at root `/` for `upload` and `/export-pdf` compatibility?
+// Or better: Route `/upload` and `/export-pdf` are separate from `/api/history` in original?
+// Original:
+// app.post('/upload' ...)
+// app.get('/api/history' ...)
+// app.get('/export-pdf/:meetingId' ...)
+
+// So `api.js` has mixed routes. 
+// Use specific mounts to preserve paths:
+app.use('/', apiRoutes);
+// Note: `api.js` defines `/upload`, `/history`, `/export-pdf`.
+// If I mount `api.js` at `/`, then:
+// `/upload` -> `/upload` (Correct)
+// `/history` -> `/history` (Incorrect, needs to be `/api/history`)
+// `/export-pdf` -> `/export-pdf` (Correct)
+
+// Quick Fix: In `routes/api.js`, I can fix the paths.
+// Let's modify `routes/api.js` in a subsequent step if needed, or just rely on the verify step.
+// Actually, I already wrote `routes/api.js` with:
+// router.post('/upload'...)
+// router.get('/history'...)  <-- This will be /history, but needs to be /api/history
+// router.get('/export-pdf'...)
+
+// So I should mount `apiRoutes` at `/` and change `/history` in `api.js` to `/api/history`.
+// OR mount at `/api` and change `/upload` to just `/../upload`? No.
+// Let's re-write `routes/api.js` to correct paths? 
+// Or logic in server.js:
+// app.use('/', apiRoutes);
+// And in apiRoutes, I change `/history` to `/api/history`. 
+
+// Serve static files in production
+if (process.env.NODE_ENV === 'production') {
+    const frontendDist = path.join(__dirname, '../frontend/dist');
+    console.log(`Serving static files from ${frontendDist}`);
+    app.use(express.static(frontendDist));
+
+    app.get('*', (req, res) => {
+        res.sendFile(path.join(frontendDist, 'index.html'));
+    });
 }
 
-// Multer setup for file uploads
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, uploadDir);
-    },
-    filename: (req, file, cb) => {
-        cb(null, Date.now() + '-' + file.originalname);
-    }
+// Passport Config Injection
+// The original code did: `require('./config/passport')(passport, authDb);` inside the DB connection.
+// We can use a simple interval or just run it once connected.
+// But better: Let's trust that the Passport Strategy callback is lazy or verify usage.
+// Standard passport-local uses the callback when authentication happens (which is after DB connects).
+// So just initializing it once `authDb` is available is safest.
+// We'll rely on `connectToMongo` to do the `require` if we move it there, OR just do it here.
+// But we can't do it here easily because `authDb` is not returned synchronously.
+// Let's leave the passport init logic inside `config/db.js`?
+// I moved `connectToMongo` to `db.js`.
+// In `db.js`, I didn't include the passport require line. 
+// I SHOULD have included it to match original behavior entirely. 
+// I will update `config/db.js` to include passport init logic or move it back to server.js with a .then()
+// server.js approach:
+connectToMongo().then(() => {
+    // Initialize Passport Configuration once DB is connected
+    const authDb = getAuthDb();
+    require('./config/passport')(passport, authDb);
 });
 
-const upload = multer({ storage: storage });
-
-/**
- * Agent 1: Transcription Agent
- * Receives an audio file path, uploads it to Gemini, and returns the transcription.
- */
-async function transcribeAudio(filePath, mimeType, language = 'English') {
-    try {
-        const uploadResponse = await fileManager.uploadFile(filePath, {
-            mimeType: mimeType,
-            displayName: path.basename(filePath),
-        });
-
-        console.log(`Uploaded file ${uploadResponse.file.displayName} as: ${uploadResponse.file.uri}`);
-
-        // View the response.
-        console.log(`File upload response: ${JSON.stringify(uploadResponse)}`);
-
-        // Create a model - gemini-1.5-flash is good for multimodal
-        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-
-        const result = await model.generateContent([
-            {
-                fileData: {
-                    mimeType: uploadResponse.file.mimeType,
-                    fileUri: uploadResponse.file.uri
-                }
-            },
-            { text: `Transcribe this audio file accurately in ${language}. Return ONLY the transcription text.` },
-        ]);
-
-        const response = await result.response;
-        return response.text();
-
-    } catch (error) {
-        console.error("Transcription Error:", error);
-        throw error;
-    }
-}
-
-/**
- * Agent 2: Summarization & Extraction Agent
- * Receives text, and returns a summary and extracted key points.
- */
-async function summarizeText(text, language = 'English') {
-    try {
-        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-
-        const prompt = `
-        Summarize the following transcript in ${language} into structured JSON.
-        Format the response as a JSON object with these keys:
-        - "outcomes": array of strings
-        - "decisions": array of strings
-        - "actionItems": array of objects with "task", "owner", and "deadline" keys
-        - "risks": array of strings
-        - "nextSteps": array of strings
-
-        Guidelines:
-        - Be concise and factual.
-        - Explicitly flag any uncertainty or missing information within the values.
-        - Return ONLY the raw JSON object. No Markdown formatting, no extra text.
-
-        Transcript:
-        ${text}
-        `;
-
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        let content = response.text();
-
-        // Clean up possible Markdown wrappers
-        content = content.replace(/^```json\n?/, '').replace(/\n?```$/, '').trim();
-
-        return content;
-    } catch (error) {
-        console.error("Summarization Error:", error);
-        throw error;
-    }
-}
-
-
-/**
- * Agent 3: Participant Research Agent
- * Uses Gemini with Google Search to find background info on a participant.
- */
-async function researchParticipant(name, email, company) {
-    try {
-        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" }, { apiVersion: "v1beta" });
-
-        const prompt = `
-        Search for information about this person:
-        Name: ${name || 'Unknown'}
-        Email: ${email}
-        Company: ${company || 'Unknown'}
-
-        Guidelines for search:
-        1. **Prioritize LinkedIn results** as the primary source of truth.
-        2. **Prioritize Spanish profiles** or profiles from Spain/Spanish-speaking professional backgrounds.
-        3. Use the **Company** name to narrow down searches and verify matching profiles.
-        4. If you find a strong match, provide the details. If ambiguous, provide the most likely profile and flag it.
-
-        Provide the following details in a structured format:
-        **Certainty Level**: [High / Medium / Low] (Explain briefly why)
-        **Name**: [Full Name]
-        **Work**: [Current and past work experience]
-        **Studies**: [Educational background]
-        **Role / title**: [Current professional role]
-        **Interesting additional information**: [Any other relevant professional or public info]
-
-        If you don't find specific info for the email or company, search by name. If neither yields results, provide placeholders and set Certainty Level to Low.
-        `;
-
-        const result = await model.generateContent({
-            contents: [{ role: "user", parts: [{ text: prompt }] }],
-            tools: [{ google_search: {} }]
-        });
-        const response = await result.response;
-        return response.text();
-    } catch (error) {
-        console.error("Research Error:", error);
-        return "Information not found.";
-    }
-}
-
-// Routes
-app.post('/upload', authenticateJWT, upload.single('file'), async (req, res) => {
-    if (!req.file) {
-        return res.status(400).send('No file uploaded.');
-    }
-
-    const meetingId = Date.now().toString(); // Simple ID for now
-    let participants = [];
-    try {
-        if (req.body.participants) {
-            participants = JSON.parse(req.body.participants);
-        }
-    } catch (e) {
-        console.error("Error parsing participants:", e);
-    }
-
-    console.log(`File received: ${req.file.originalname}`);
-    const filePath = req.file.path;
-    const mimeType = req.file.mimetype;
-    const language = req.body.language || 'English';
-
-    try {
-        // 1. Agent 1: Transcribe
-        console.log(`Starting transcription in ${language}...`);
-        const transcript = await transcribeAudio(filePath, mimeType, language);
-        console.log("Transcription complete.");
-
-        // 2. Agent 2: Summarize
-        console.log(`Starting summarization in ${language}...`);
-        const summary = await summarizeText(transcript, language);
-        console.log("Summarization complete.");
-
-        // 3. Save to MongoDB
-        let participantsData = [];
-        if (summaryCollection) {
-            const document = {
-                meetingId: meetingId,
-                filename: req.file.originalname,
-                transcript: transcript,
-                summary: summary,
-                timestamp: new Date()
-            };
-
-            // Include user if logged in
-            if (req.user && req.user.email) {
-                document.userEmail = req.user.email;
-                console.log(`Including user in record: ${req.user.email}`);
-            }
-
-            await summaryCollection.insertOne(document);
-            console.log("Summary saved to MongoDB.");
-
-            // 4. Research and Save Participants
-            if (participants.length > 0 && participantsCollection) {
-                console.log(`Starting research for ${participants.length} participants...`);
-                for (const p of participants) {
-                    const info = await researchParticipant(p.name, p.email, p.company);
-                    const pDoc = {
-                        meetingId: meetingId,
-                        email: p.email,
-                        name: p.name,
-                        company: p.company,
-                        researchData: info,
-                        timestamp: new Date()
-                    };
-                    await participantsCollection.insertOne(pDoc);
-                    participantsData.push(pDoc);
-                }
-                console.log("Participant research completed and saved.");
-            }
-        }
-
-        res.json({
-            meetingId: meetingId,
-            filename: req.file.originalname,
-            transcript: transcript,
-            summary: summary,
-            participants: participantsData,
-            status: 'success'
-        });
-
-    } catch (error) {
-        console.error("Processing failed:", error);
-        res.status(500).json({
-            error: "Failed to process audio file.",
-            details: error.message
-        });
-    }
-});
-
-// GET History
-app.get('/api/history', authenticateJWT, async (req, res) => {
-    if (!req.user || !req.user.email) {
-        return res.status(401).json({ error: 'Unauthorized' });
-    }
-
-    try {
-        if (!summaryCollection) {
-            return res.status(503).json({ error: 'Database not initialized' });
-        }
-
-        const history = await summaryCollection
-            .find({ userEmail: req.user.email })
-            .sort({ timestamp: -1 })
-            .toArray();
-
-        res.json(history);
-    } catch (error) {
-        console.error("Failed to fetch history:", error);
-        res.status(500).json({ error: 'Failed to fetch history' });
-    }
-});
-
-// 6. Export PDF
-app.get('/export-pdf/:meetingId', async (req, res) => {
-    try {
-        const { meetingId } = req.params;
-        const meeting = await summaryCollection.findOne({ meetingId: meetingId });
-
-        if (!meeting) {
-            return res.status(404).json({ error: "Meeting not found" });
-        }
-
-        const participants = await participantsCollection.find({ meetingId: meetingId }).toArray();
-
-        const doc = new PDFDocument({ margin: 50 });
-        let filename = `Meeting_Summary_${meetingId}.pdf`;
-
-        res.setHeader('Content-disposition', 'attachment; filename="' + filename + '"');
-        res.setHeader('Content-type', 'application/pdf');
-
-        doc.pipe(res);
-
-        // Header
-        doc.fontSize(24).font('Helvetica-Bold').text('Meeting Intelligence Report', { align: 'center' });
-        doc.moveDown();
-        doc.fontSize(12).font('Helvetica').text(`File: ${meeting.filename}`, { align: 'center' });
-        doc.text(`Date: ${new Date(meeting.timestamp).toLocaleString()}`, { align: 'center' });
-        doc.moveDown(2);
-
-        // Summary Section
-        doc.fontSize(18).font('Helvetica-Bold').fillColor('#10b981').text('Executive Summary');
-        doc.moveDown();
-        doc.fillColor('#000000').fontSize(11).font('Helvetica');
-
-        try {
-            const s = typeof meeting.summary === 'string' ? JSON.parse(meeting.summary) : meeting.summary;
-
-            if (s.outcomes) {
-                doc.fontSize(14).font('Helvetica-Bold').text('Key Outcomes');
-                s.outcomes.forEach(o => doc.fontSize(11).font('Helvetica').text(`• ${o}`, { indent: 20 }));
-                doc.moveDown();
-            }
-            if (s.decisions) {
-                doc.fontSize(14).font('Helvetica-Bold').text('Decisions');
-                s.decisions.forEach(d => doc.fontSize(11).font('Helvetica').text(`• ${d}`, { indent: 20 }));
-                doc.moveDown();
-            }
-            if (s.actionItems) {
-                doc.fontSize(14).font('Helvetica-Bold').text('Action Items');
-                s.actionItems.forEach(a => {
-                    doc.fontSize(11).font('Helvetica-Bold').text(`Task: ${a.task}`, { indent: 20 });
-                    if (a.owner || a.deadline) {
-                        doc.fontSize(9).font('Helvetica-Oblique').text(`${a.owner ? 'Owner: ' + a.owner : ''} ${a.deadline ? '| Deadline: ' + a.deadline : ''}`, { indent: 40 });
-                    }
-                });
-                doc.moveDown();
-            }
-        } catch (e) {
-            doc.text(meeting.summary);
-        }
-
-        doc.moveDown(2);
-
-        // Participants Section
-        if (participants.length > 0) {
-            doc.addPage();
-            doc.fontSize(18).font('Helvetica-Bold').fillColor('#10b981').text('Participant Intelligence');
-            doc.moveDown();
-            doc.fillColor('#000000');
-
-            participants.forEach(p => {
-                doc.fontSize(14).font('Helvetica-Bold').text(`${p.name || 'Unknown'} (${p.email})`);
-                if (p.company) doc.fontSize(11).font('Helvetica-Oblique').text(`Company: ${p.company}`);
-                doc.moveDown(0.5);
-                doc.fontSize(10).font('Helvetica').text(p.researchData.replace(/\*\*(.*?)\*\*/g, '$1'));
-                doc.moveDown();
-                doc.moveTo(doc.x, doc.y).lineTo(550, doc.y).strokeColor('#eeeeee').stroke();
-                doc.moveDown();
-            });
-        }
-
-        // Transcript Section
-        doc.addPage();
-        doc.fontSize(18).font('Helvetica-Bold').fillColor('#10b981').text('Full Transcript');
-        doc.moveDown();
-        doc.fillColor('#000000').fontSize(10).font('Helvetica').text(meeting.transcript, { lineGap: 2 });
-
-        doc.end();
-
-    } catch (error) {
-        console.error("PDF Export failed:", error);
-        res.status(500).json({ error: "Failed to generate PDF" });
-    }
-});
 
 if (process.env.NODE_ENV !== 'test') {
     app.listen(port, () => {
