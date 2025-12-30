@@ -5,7 +5,7 @@ const path = require('path');
 const fs = require('fs');
 const jwt = require('jsonwebtoken');
 
-const { handleUpload } = require('../controllers/uploadController');
+const { handleUpload, handleWhatsAppUpload } = require('../controllers/uploadController');
 const { getHistory } = require('../controllers/historyController');
 const { exportPdf } = require('../controllers/exportController');
 
@@ -47,7 +47,12 @@ const authenticateJWT = (req, res, next) => {
 };
 
 // Routes
+const { handlePreparation } = require('../controllers/preparationController');
+
+// Routes
 router.post('/upload', authenticateJWT, upload.single('file'), handleUpload);
+router.post('/upload-whatsapp', authenticateJWT, upload.single('file'), handleWhatsAppUpload);
+router.post('/prepare', authenticateJWT, handlePreparation);
 router.get('/api/history', authenticateJWT, getHistory);
 router.get('/export-pdf/:meetingId', exportPdf);
 

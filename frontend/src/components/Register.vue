@@ -94,6 +94,7 @@
 import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
+import { API_URL } from '../config';
 
 const email = ref('');
 const password = ref('');
@@ -128,7 +129,7 @@ async function onSubmit() {
   error.value = '';
   
   try {
-    await axios.post('http://localhost:8080/api/auth/register', {
+    await axios.post(`${API_URL}/api/auth/register`, {
       email: email.value,
       password: password.value
     });
@@ -143,7 +144,7 @@ async function onSubmit() {
 }
 
 function loginWithGoogle() {
-  window.location.href = 'http://localhost:8080/api/auth/google';
+  window.location.href = `${API_URL}/api/auth/google`;
 }
 </script>
 

@@ -1,34 +1,43 @@
 const PDFDocument = require('pdfkit');
-const { getSummaryCollection, getParticipantsCollection } = require('../config/db');
+const fs = require('fs');
 
-async function exportPdf(req, res) {
+async function testPdfGen() {
     try {
-        const { meetingId } = req.params;
-        const summaryCollection = getSummaryCollection();
-        const participantsCollection = getParticipantsCollection();
-
-        if (!summaryCollection) {
-            return res.status(503).json({ error: 'Database not initialized' });
-        }
-
-        const meeting = await summaryCollection.findOne({ meetingId: meetingId });
-
-        if (!meeting) {
-            return res.status(404).json({ error: "Meeting not found" });
-        }
-
-        let participants = [];
-        if (participantsCollection) {
-            participants = await participantsCollection.find({ meetingId: meetingId }).toArray();
-        }
-
         const doc = new PDFDocument({ margin: 50 });
-        let filename = `Meeting_Summary_${meetingId}.pdf`;
+        const stream = fs.createWriteStream('test_output.pdf');
+        doc.pipe(stream);
 
-        res.setHeader('Content-disposition', 'attachment; filename="' + filename + '"');
-        res.setHeader('Content-type', 'application/pdf');
+        // Mock Data
+        const meeting = {
+            filename: 'Test_Meeting.mp3',
+            timestamp: new Date(),
+            transcript: 'This is a mock transcript.',
+            summary: JSON.stringify({
+                outcomes: [
+                    "This is a very long outcome that should be detailed and comprehensive. It explains that the team decided to move forward with the new architecture after careful consideration of all the risks involved. The outcome is positive and sets the stage for future growth.",
+                    "Another outcome regarding the marketing strategy, which was approved seamlessly."
+                ],
+                risks: [
+                    "Potential delay in Q3 due to supply chain issues.",
+                    "Uncertainty about listener engagement with the new format."
+                ],
+                nextSteps: [
+                    "Schedule a follow-up meeting for next Tuesday.",
+                    "Complete the API documentation draft."
+                ],
+                actionItems: [
+                    { task: "Update the database schema", owner: "Dev Team", deadline: "Friday" },
+                    { task: "Send invites", owner: "Project Manager" }
+                ]
+            })
+        };
 
-        doc.pipe(res);
+        const participants = [
+            { name: "Alice Smith", email: "alice@example.com", company: "Tech Corp", researchData: "**Certainty Level**: High\n\nExperienced engineer." },
+            { name: "Bob Jones", email: "bob@example.com", researchData: "No info found." }
+        ];
+
+        // --- Logic from exportController.js ---
 
         // Header
         doc.fontSize(24).font('Helvetica-Bold').text('Meeting Intelligence Report', { align: 'center' });
@@ -43,7 +52,7 @@ async function exportPdf(req, res) {
         doc.fillColor('#000000').fontSize(11).font('Helvetica');
 
         try {
-            const s = typeof meeting.summary === 'string' ? JSON.parse(meeting.summary) : meeting.summary;
+            const s = JSON.parse(meeting.summary);
 
             if (s.outcomes && s.outcomes.length > 0) {
                 doc.fontSize(14).font('Helvetica-Bold').text('Key Outcomes');
@@ -75,6 +84,7 @@ async function exportPdf(req, res) {
                 doc.moveDown();
             }
         } catch (e) {
+            console.error(e);
             doc.text(meeting.summary);
         }
 
@@ -98,18 +108,12 @@ async function exportPdf(req, res) {
             });
         }
 
-        // Transcript Section
-        doc.addPage();
-        doc.fontSize(18).font('Helvetica-Bold').fillColor('#10b981').text('Full Transcript');
-        doc.moveDown();
-        doc.fillColor('#000000').fontSize(10).font('Helvetica').text(meeting.transcript || "No transcript available.", { lineGap: 2 });
-
         doc.end();
+        console.log("PDF generated successfully: test_output.pdf");
 
     } catch (error) {
         console.error("PDF Export failed:", error);
-        res.status(500).json({ error: "Failed to generate PDF" });
     }
 }
 
-module.exports = { exportPdf };
+testPdfGen();

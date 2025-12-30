@@ -1,6 +1,7 @@
 <script setup>
 import { computed } from 'vue';
 import MeetingIntelligence from './MeetingIntelligence.vue';
+import { API_URL } from '../config';
 
 const props = defineProps({
   result: {
@@ -34,7 +35,7 @@ const formatMarkdown = (text) => {
         <span class="filename">{{ result.filename }}</span>
       </div>
       <div class="header-actions">
-        <a :href="`http://localhost:8080/export-pdf/${result.meetingId}`" class="download-btn" target="_blank">
+        <a :href="`${API_URL}/export-pdf/${result.meetingId}`" class="download-btn" target="_blank">
           <span class="icon">📥</span> PDF Summary
         </a>
         <span class="badge">Analysis Complete</span>

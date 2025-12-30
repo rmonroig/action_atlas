@@ -107,15 +107,45 @@ app.use('/', apiRoutes);
 // app.use('/', apiRoutes);
 // And in apiRoutes, I change `/history` to `/api/history`. 
 
-// Serve static files in production
-if (process.env.NODE_ENV === 'production') {
-    const frontendDist = path.join(__dirname, '../frontend/dist');
+const frontendDist = path.join(__dirname, '../frontend/dist');
+const fs = require('fs');
+
+console.log('--- DEBUG: FILESYSTEM CHECK ---');
+console.log(`Current __dirname: ${__dirname}`);
+console.log(`Target frontendDist: ${frontendDist}`);
+
+try {
+    console.log(`Contents of /app:`, fs.readdirSync(path.join(__dirname, '..')));
+} catch (e) {
+    console.log(`Cannot list /app: ${e.message}`);
+}
+
+try {
+    console.log(`Contents of /app/frontend:`, fs.readdirSync(path.join(__dirname, '../frontend')));
+} catch (e) {
+    console.log(`Cannot list /app/frontend: ${e.message}`);
+}
+console.log('--- END DEBUG ---');
+
+// Serve static files (Priority: Check if dist exists, regardless of mode)
+if (fs.existsSync(frontendDist)) {
     console.log(`Serving static files from ${frontendDist}`);
     app.use(express.static(frontendDist));
 
-    app.get('*', (req, res) => {
-        res.sendFile(path.join(frontendDist, 'index.html'));
+    // Handle SPA fallback
+    app.get(/(.*)/, (req, res) => {
+        // Fallback for non-API routes
+        if (!req.path.startsWith('/api') && !req.path.startsWith('/auth')) {
+            res.sendFile(path.join(frontendDist, 'index.html'));
+        } else {
+            res.status(404).json({ error: 'Endpoint not found' });
+        }
     });
+} else {
+    // Only log warning if in production, to avoid noise in dev
+    if (process.env.NODE_ENV === 'production') {
+        console.error(`WARNING: Frontend dist not found at ${frontendDist}`);
+    }
 }
 
 // Passport Config Injection
