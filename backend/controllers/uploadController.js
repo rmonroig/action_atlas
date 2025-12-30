@@ -1,7 +1,8 @@
 const {
     transcribeAudio,
     summarizeText,
-    researchParticipant
+    researchParticipant,
+    summarizeWhatsApp
 } = require('../services/geminiService');
 const {
     getSummaryCollection,
@@ -49,16 +50,29 @@ async function handleUpload(req, res) {
                 filename: req.file.originalname,
                 transcript: transcript,
                 summary: summary,
+                status: 'completed',
                 timestamp: new Date()
             };
 
-            // Include user if logged in
             if (req.user && req.user.email) {
                 document.userEmail = req.user.email;
                 console.log(`Including user in record: ${req.user.email}`);
             }
 
-            await summaryCollection.insertOne(document);
+            // Check if we are updating an existing prepared meeting
+            const existingId = req.body.meetingId;
+            if (existingId) {
+                console.log(`Updating existing meeting: ${existingId}`);
+                await summaryCollection.updateOne(
+                    { meetingId: existingId },
+                    { $set: { ...document, meetingId: existingId } }, // Ensure ID stays same
+                    { upsert: true }
+                );
+                // Use the existing ID for response
+                document.meetingId = existingId;
+            } else {
+                await summaryCollection.insertOne(document);
+            }
             console.log("Summary saved to MongoDB.");
 
             // 4. Research and Save Participants
@@ -83,7 +97,7 @@ async function handleUpload(req, res) {
         }
 
         res.json({
-            meetingId: meetingId,
+            meetingId: req.body.meetingId || meetingId,
             filename: req.file.originalname,
             transcript: transcript,
             summary: summary,
@@ -100,4 +114,65 @@ async function handleUpload(req, res) {
     }
 }
 
-module.exports = { handleUpload };
+// ... existing code ...
+
+async function handleWhatsAppUpload(req, res) {
+    if (!req.file) {
+        return res.status(400).send('No file uploaded.');
+    }
+
+    const meetingId = 'wa-' + Date.now().toString();
+
+    console.log(`WhatsApp file received: ${req.file.originalname}`);
+    const filePath = req.file.path;
+    const mimeType = req.file.mimetype;
+    const language = req.body.language || 'English';
+
+    try {
+        // 1. Transcribe
+        console.log(`Starting WhatsApp transcription in ${language}...`);
+        const transcript = await transcribeAudio(filePath, mimeType, language);
+
+        // 2. Summarize for WhatsApp
+        console.log(`Starting WhatsApp summarization...`);
+        const summary = await summarizeWhatsApp(transcript, language);
+
+        // 3. Save to MongoDB
+        const summaryCollection = getSummaryCollection();
+
+        if (summaryCollection) {
+            const document = {
+                meetingId: meetingId,
+                type: 'whatsapp',
+                filename: req.file.originalname,
+                transcript: transcript,
+                summary: summary,
+                timestamp: new Date()
+            };
+
+            if (req.user && req.user.email) {
+                document.userEmail = req.user.email;
+            }
+
+            await summaryCollection.insertOne(document);
+        }
+
+        res.json({
+            meetingId: meetingId,
+            type: 'whatsapp',
+            filename: req.file.originalname,
+            transcript: transcript,
+            summary: summary,
+            status: 'success'
+        });
+
+    } catch (error) {
+        console.error("WhatsApp processing failed:", error);
+        res.status(500).json({
+            error: "Failed to process WhatsApp audio.",
+            details: error.message
+        });
+    }
+}
+
+module.exports = { handleUpload, handleWhatsAppUpload };

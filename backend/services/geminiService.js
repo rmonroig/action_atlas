@@ -50,14 +50,14 @@ async function summarizeText(text, language = 'English') {
         const prompt = `
         Summarize the following transcript in ${language} into structured JSON.
         Format the response as a JSON object with these keys:
-        - "outcomes": array of strings
-        - "decisions": array of strings
+        - "outcomes": array of long strings (provide detailed and comprehensive explanations of key outcomes)
+        - "decisions": array of strings (briefly state any final decisions made)
         - "actionItems": array of objects with "task", "owner", and "deadline" keys
-        - "risks": array of strings
-        - "nextSteps": array of strings
+        - "risks": array of strings (identify potential risks, open questions, or uncertainties)
+        - "nextSteps": array of strings (list clear next steps or future agenda items)
 
         Guidelines:
-        - Be concise and factual.
+        - Be factual but comprehensive for outcomes.
         - Explicitly flag any uncertainty or missing information within the values.
         - Return ONLY the raw JSON object. No Markdown formatting, no extra text.
 
@@ -120,8 +120,94 @@ async function researchParticipant(name, email, company) {
     }
 }
 
+// ... (existing functions)
+
+/**
+ * Agent 4: WhatsApp Audio Summarization Agent
+ */
+async function summarizeWhatsApp(text, language = 'English') {
+    try {
+        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+
+        const prompt = `
+        Summarize the following WhatsApp audio transcript in ${language} into structured JSON.
+        Format the response as a JSON object with these EXACT keys:
+        - "summary": string (a concise summary of the audio note)
+        - "immediateActions": array of strings (clear, immediate actions required, if any)
+
+        Guidelines:
+        - Keep it brief and direct, suitable for a quick read.
+        - Return ONLY the raw JSON object. No Markdown formatting, no extra text.
+
+        Transcript:
+        ${text}
+        `;
+
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        let content = response.text();
+
+        // Clean up possible Markdown wrappers
+        content = content.replace(/^```json\n?/, '').replace(/\n?```$/, '').trim();
+
+        return content;
+    } catch (error) {
+        console.error("WhatsApp Summarization Error:", error);
+        throw error;
+    }
+}
+
+// ... (existing functions)
+
+/**
+ * Agent 5: Meeting Preparation Agent
+ */
+async function generateMeetingBrief(topic, participants) {
+    try {
+        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" }, { apiVersion: "v1beta" });
+
+        // 1. Research Participants (Parallel)
+        const researchPromises = participants.map(p => researchParticipant(p.name, p.email, p.company));
+        const researchResults = await Promise.all(researchPromises);
+
+        const researchSummary = participants.map((p, i) => `
+        Person: ${p.name} (${p.company})
+        Research: ${researchResults[i]}
+        `).join('\n\n');
+
+        // 2. Generate Brief
+        const prompt = `
+        Prepare a meeting brief for the following topic: "${topic}"
+
+        Participants Research:
+        ${researchSummary}
+
+        Generate a structured JSON response with:
+        - "brief": string (Executive summary of the context and participants)
+        - "talkingPoints": array of strings (Strategic points to discuss based on participant backgrounds)
+        - "questions": array of strings (Insightful questions to ask specific participants)
+        - "icebreakers": array of strings (Personalized icebreakers based on research)
+
+        Return ONLY the raw JSON object.
+        `;
+
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        let content = response.text();
+        content = content.replace(/^```json\n?/, '').replace(/\n?```$/, '').trim();
+
+        return content;
+
+    } catch (error) {
+        console.error("Meeting Preparation Error:", error);
+        throw error;
+    }
+}
+
 module.exports = {
     transcribeAudio,
     summarizeText,
-    researchParticipant
+    researchParticipant,
+    summarizeWhatsApp,
+    generateMeetingBrief
 };

@@ -1,13 +1,24 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
+import { useRoute } from 'vue-router';
 import FileDrop from './FileDrop.vue';
 import SummaryResult from './SummaryResult.vue';
+import { API_URL } from '../config';
 
+const route = useRoute();
 const appState = ref('idle'); // idle, uploading, success
 const summaryResult = ref(null);
 const participants = ref([{ email: '', name: '', company: '' }]);
 const selectedLanguage = ref('English'); // Default to English
 const isAuthenticated = ref(!!localStorage.getItem('token'));
+const existingMeetingId = ref(null);
+
+onMounted(() => {
+  if (route.query.id) {
+    existingMeetingId.value = route.query.id;
+    console.log("Linking to prepared meeting:", existingMeetingId.value);
+  }
+});
 
 const addParticipant = () => {
   participants.value.push({ email: '', name: '', company: '' });
@@ -31,6 +42,10 @@ const handleFileSelected = async (file) => {
   formData.append('participants', JSON.stringify(validParticipants));
   formData.append('language', selectedLanguage.value);
 
+  if (existingMeetingId.value) {
+    formData.append('meetingId', existingMeetingId.value);
+  }
+
   try {
     const token = localStorage.getItem('token');
     const headers = {};
@@ -38,7 +53,7 @@ const handleFileSelected = async (file) => {
       headers['Authorization'] = `Bearer ${token}`;
     }
 
-    const response = await fetch('http://localhost:8080/upload', {
+    const response = await fetch(`${API_URL}/upload`, {
       method: 'POST',
       headers: headers,
       body: formData,

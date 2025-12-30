@@ -36,10 +36,20 @@ const triggerFileInput = () => {
 };
 
 const validateAndEmit = (file) => {
-  if (file.type === 'audio/mpeg' || file.name.endsWith('.mp3')) {
+  const validTypes = [
+    'audio/mpeg', 'audio/mp3', 
+    'audio/ogg', 'audio/wav', 'audio/x-wav', 
+    'audio/mp4', 'audio/aac', 'audio/x-m4a'
+  ];
+  const validExtensions = ['.mp3', '.ogg', '.wav', '.m4a', '.aac'];
+
+  const isValidType = validTypes.includes(file.type);
+  const isValidExtension = validExtensions.some(ext => file.name.toLowerCase().endsWith(ext));
+
+  if (isValidType || isValidExtension) {
     emit('file-selected', file);
   } else {
-    alert('Please upload an MP3 file.');
+    alert('Please upload a valid audio file (MP3, OGG, M4A, WAV, AAC).');
   }
 };
 </script>
@@ -58,7 +68,7 @@ const validateAndEmit = (file) => {
       type="file"
       ref="fileInput"
       @change="handleFileSelect"
-      accept=".mp3,audio/mpeg"
+      accept=".mp3,.ogg,.wav,.m4a,.aac,audio/*"
       hidden
     />
 
@@ -83,7 +93,7 @@ const validateAndEmit = (file) => {
 
     <p class="title">Upload audio file</p>
     <p class="subtitle">
-      Drag & drop your MP3 here or <span>browse files</span>
+      Drag & drop your audio here (MP3, M4A, WAV, OGG) or <span>browse files</span>
     </p>
   </div>
 </template>

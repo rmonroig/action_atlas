@@ -80,5 +80,36 @@ module.exports = function (db) {
         res.json({ message: 'Logged out successfully' });
     });
 
+    // Get User Profile
+    router.get('/me', async (req, res) => {
+        const authHeader = req.headers.authorization;
+        if (authHeader) {
+            const token = authHeader.split(' ')[1];
+            jwt.verify(token, process.env.JWT_SECRET || 'secret', async (err, user) => {
+                if (err) {
+                    return res.sendStatus(403);
+                }
+
+                try {
+                    // Fetch fresh user data from DB
+                    const userData = await User.findByEmail(db, user.email);
+                    if (!userData) {
+                        return res.status(404).json({ message: 'User not found' });
+                    }
+                    res.json({
+                        email: userData.email,
+                        // Add other fields here if they exist in your User schema
+                        id: userData._id
+                    });
+                } catch (e) {
+                    console.error("Error fetching user profile:", e);
+                    res.status(500).json({ message: 'Server error' });
+                }
+            });
+        } else {
+            res.sendStatus(401);
+        }
+    });
+
     return router;
 };
