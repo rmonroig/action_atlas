@@ -4,11 +4,11 @@
       <div class="auth-visual-side">
         <div class="visual-content">
           <div class="logo-area">
-            <span class="logo-icon">📍</span>
-            <span class="logo-text">Action Atlas</span>
+            <span class="logo-icon">🦁</span>
+            <span class="logo-text">Brave Mentor</span>
           </div>
-          <h1>From Meetings and Ideas to Action</h1>
-          <p>Transform your team's conversations into actionable insights. Your journey to peak performance starts here.</p>
+          <h1>Bold Guidance, Decisive Action</h1>
+          <p>Transform your team's conversations into clear, confident steps forward.</p>
           <div class="map-decoration">
             <!-- Simplified abstract map pattern -->
             <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
@@ -33,7 +33,7 @@
               <label for="email">Email Address</label>
               <div class="input-wrapper">
                 <span class="input-icon">✉️</span>
-                <input id="email" v-model="email" type="email" placeholder="explorer@actionatlas.com" required />
+                <input id="email" v-model="email" type="email" placeholder="explorer@bravementor.com" required />
               </div>
             </div>
 
@@ -295,7 +295,7 @@ input {
 input:focus {
   outline: none;
   border-color: var(--accent-primary);
-  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+  box-shadow: 0 0 0 4px rgba(234, 88, 12, 0.15);
 }
 
 .visibility-toggle {

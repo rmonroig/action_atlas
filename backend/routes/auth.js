@@ -5,6 +5,9 @@ const passport = require('passport');
 const User = require('../models/User');
 const { encrypt } = require('../utils/encryption');
 
+const crypto = require('crypto');
+const { sendVerificationEmail } = require('../services/emailService');
+
 module.exports = function (db) {
     const loginLogCollection = db.collection('user_login');
 
@@ -16,9 +19,51 @@ module.exports = function (db) {
             if (user) {
                 return res.status(400).json({ message: 'User already exists' });
             }
-            user = await User.create(db, { email, password });
-            res.status(201).json({ message: 'User registered successfully' });
+
+            const verificationToken = crypto.randomBytes(32).toString('hex');
+
+            user = await User.create(db, {
+                email,
+                password,
+                isVerified: false,
+                verificationToken
+            });
+
+            // Send verification email
+            // console.log('[AuthDebug] Registering user:', email);
+            // console.log('[AuthDebug] EMAIL_USER present:', !!process.env.EMAIL_USER);
+            // console.log('[AuthDebug] EMAIL_PASS present:', !!process.env.EMAIL_PASS);
+            // console.log('[AuthDebug] EMAIL_SERVICE:', process.env.EMAIL_SERVICE);
+
+            try {
+                console.log('[AuthDebug] Calling sendVerificationEmail...');
+                await sendVerificationEmail(email, verificationToken);
+                console.log('[AuthDebug] sendVerificationEmail completed.');
+            } catch (emailErr) {
+                console.error('[AuthDebug] Failed to send verification email:', emailErr);
+                // We typically still allow registration but log the error
+            }
+
+            res.status(201).json({ message: 'User registered. CHECK EMAIL NOW.' });
         } catch (err) {
+            console.error(err);
+            res.status(500).json({ message: 'Server error' });
+        }
+    });
+
+    // Verify Email Endpoint
+    router.post('/verify-email', async (req, res) => {
+        const { token } = req.body;
+        try {
+            const user = await User.findByVerificationToken(db, token);
+            if (!user) {
+                return res.status(400).json({ message: 'Invalid or expired verification token' });
+            }
+
+            await User.verifyUser(db, user._id);
+            res.json({ message: 'Email verified successfully. You can now login.' });
+        } catch (err) {
+            console.error(err);
             res.status(500).json({ message: 'Server error' });
         }
     });
@@ -28,6 +73,11 @@ module.exports = function (db) {
         passport.authenticate('local', { session: false }, async (err, user, info) => {
             if (err) return next(err);
             if (!user) return res.status(400).json({ message: info.message });
+
+            // Check verification
+            if (user.isVerified === false) {
+                return res.status(403).json({ message: 'Please verify your email address before logging in.' });
+            }
 
             const payload = { id: user._id, email: user.email };
             const token = jwt.sign(payload, process.env.JWT_SECRET || 'secret', { expiresIn: '1h' });

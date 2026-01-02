@@ -8,18 +8,20 @@ import ProcessWhatsApp from './components/ProcessWhatsApp.vue'; // Import
 import Opportunities from './components/Opportunities.vue';
 import Preparation from './components/Preparation.vue';
 import Profile from './components/Profile.vue';
+import VerifyEmail from './components/VerifyEmail.vue'; // Import
 
 const routes = [
     { path: '/', name: 'Home', component: Home, meta: { requiresAuth: true } },
     { path: '/home', name: 'HomeAlt', component: Home, meta: { requiresAuth: true } },
     { path: '/profile', name: 'Profile', component: Profile, meta: { requiresAuth: true } },
     { path: '/process', name: 'ProcessMeeting', component: ProcessMeeting, meta: { requiresAuth: true } },
-    { path: '/whatsapp', name: 'ProcessWhatsApp', component: ProcessWhatsApp, meta: { requiresAuth: true } }, // New Route
+    { path: '/whatsapp', name: 'ProcessWhatsApp', component: ProcessWhatsApp, meta: { requiresAuth: true } },
     { path: '/test', name: 'TestCapability', component: ProcessMeeting },
     { path: '/opportunities', name: 'Opportunities', component: Opportunities, meta: { requiresAuth: true } },
     { path: '/preparation', name: 'Preparation', component: Preparation, meta: { requiresAuth: true } },
-    { path: '/login', name: 'Login', component: Login }, // Note: Login.vue is imported as Login
+    { path: '/login', name: 'Login', component: Login },
     { path: '/register', name: 'Register', component: Register },
+    { path: '/verify-email', name: 'VerifyEmail', component: VerifyEmail }, // New Route
     { path: '/auth-success', name: 'AuthSuccess', component: AuthSuccess },
 ];
 

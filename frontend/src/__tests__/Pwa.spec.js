@@ -15,14 +15,14 @@ describe('PWA Configuration and Assets', () => {
     it('has vite-plugin-pwa configured in vite.config.js', async () => {
         const configContent = fs.readFileSync(viteConfigPath, 'utf-8');
         expect(configContent).toContain('VitePWA(');
-        expect(configContent).toContain("name: 'Action Atlas'");
-        expect(configContent).toContain("short_name: 'ActionAtlas'");
+        expect(configContent).toContain("name: 'Brave Mentor'");
+        expect(configContent).toContain("short_name: 'BraveMentor'");
     });
 
     it('has the manifest defined with correct properties', async () => {
         const configContent = fs.readFileSync(viteConfigPath, 'utf-8');
         // Simple regex check for manifest properties
-        expect(configContent).toMatch(/theme_color:\s*'#0a0f1e'/);
+        expect(configContent).toMatch(/theme_color:\s*'#0f172a'/);
         expect(configContent).toMatch(/registerType:\s*'autoUpdate'/);
     });
 
@@ -30,8 +30,8 @@ describe('PWA Configuration and Assets', () => {
         'favicon.ico',
         'pwa-192x192.png',
         'pwa-512x512.png',
-        'maskable-icon.png',
-        'apple-touch-icon.png'
+        'maskable-icon.jpg',
+        'apple-touch-icon.jpg'
     ];
 
     it.each(requiredAssets)('contains the required asset: %s', (assetName) => {
