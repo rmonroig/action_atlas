@@ -4,11 +4,11 @@
       <div class="auth-visual-side">
         <div class="visual-content">
           <div class="logo-area">
-            <span class="logo-icon">🗺️</span>
-            <span class="logo-text">Action Atlas</span>
+            <span class="logo-icon">🦁</span>
+            <span class="logo-text">Brave Mentor</span>
           </div>
-          <h1>Start Mapping Your Actions</h1>
-          <p>Join a community of professionals turning complex ideas into structured, navigable results.</p>
+          <h1>Start Your Bold Journey</h1>
+          <p>Join a community of professionals turning complex challenges into decisive victories.</p>
           <div class="trust-signals">
             <div class="trust-item">
               <span class="trust-icon">🔒</span>
@@ -29,12 +29,20 @@
             <p>Your journey begins here.</p>
           </div>
 
-          <form @submit.prevent="onSubmit" class="modern-form">
+          <div v-if="success" class="success-message">
+            <div class="icon-circle success">✉️</div>
+            <h3>Check Your Email</h3>
+            <p>We've sent a verification link to <strong>{{ email }}</strong>.</p>
+            <p>Please check your inbox (and spam folder) to verify your account before logging in.</p>
+            <button @click="router.push('/login')" class="btn-primary">Return to Login</button>
+          </div>
+
+          <form v-else @submit.prevent="onSubmit" class="modern-form">
             <div class="form-group">
               <label for="email">Email Address</label>
               <div class="input-wrapper">
                 <span class="input-icon">✉️</span>
-                <input id="email" v-model="email" type="email" placeholder="explorer@actionatlas.com" required />
+                <input id="email" v-model="email" type="email" placeholder="explorer@bravementor.com" required />
               </div>
             </div>
 
@@ -119,6 +127,8 @@ const strengthClass = computed(() => {
   return 'strong';
 });
 
+const success = ref(false); // Add success ref
+
 async function onSubmit() {
   if (password.value !== confirmPassword.value) {
     alert('Passwords do not match');
@@ -134,7 +144,7 @@ async function onSubmit() {
       password: password.value
     });
     
-    router.push('/login');
+    success.value = true; // Set success instead of redirect
   } catch (err) {
     error.value = err.response?.data?.message || 'Registration failed. Please try again.';
     console.error('Registration error:', err);
@@ -317,7 +327,7 @@ input[type="password"] {
 input:focus {
   outline: none;
   border-color: var(--accent-primary);
-  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+  box-shadow: 0 0 0 4px rgba(234, 88, 12, 0.15);
 }
 
 .password-strength {
@@ -535,5 +545,29 @@ input:focus {
     padding: 2rem;
     flex: 1;
   }
+}
+
+.success-message {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.icon-circle {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+.icon-circle.success {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--accent-primary);
 }
 </style>

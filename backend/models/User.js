@@ -31,6 +31,23 @@ class User {
         return await usersCollection.findOne({ googleId });
     }
 
+    static async findByVerificationToken(db, token) {
+        const usersCollection = db.collection('user_auth');
+        return await usersCollection.findOne({ verificationToken: token });
+    }
+
+    static async verifyUser(db, userId) {
+        const { ObjectId } = require('mongodb');
+        const usersCollection = db.collection('user_auth');
+        return await usersCollection.updateOne(
+            { _id: new ObjectId(userId) },
+            {
+                $set: { isVerified: true },
+                $unset: { verificationToken: "" }
+            }
+        );
+    }
+
     static async comparePassword(candidatePassword, hash) {
         return await bcrypt.compare(candidatePassword, hash);
     }

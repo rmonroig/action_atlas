@@ -1,2 +1,4 @@
-const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-export const API_URL = isLocalhost ? 'http://localhost:8080' : '';
+// Use relative path for API calls.
+// In development, Vite proxy forwards these to localhost:8080.
+// In production, the backend serves the frontend, so it's same-origin.
+export const API_URL = '';

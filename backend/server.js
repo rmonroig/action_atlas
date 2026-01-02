@@ -1,4 +1,5 @@
 require('dotenv').config();
+console.log('!!! STARTING SERVER.JS !!! File:', __filename);
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -20,6 +21,10 @@ connectToMongo().then(() => {
 const JWT_SECRET = process.env.JWT_SECRET || 'secret';
 
 // Middleware
+app.use((req, res, next) => {
+    console.log(`[SERVER] Request ignored? Method: ${req.method}, Path: ${req.path}`);
+    next();
+});
 app.use(cors());
 app.use(express.json());
 app.use(session({
@@ -171,7 +176,7 @@ connectToMongo().then(() => {
 
 if (process.env.NODE_ENV !== 'test') {
     app.listen(port, () => {
-        console.log(`Action Atlas Backend running at http://localhost:${port}`);
+        console.log(`Brave Mentor Backend running at http://localhost:${port}`);
     });
 }
 
