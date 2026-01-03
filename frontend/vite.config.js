@@ -8,7 +8,7 @@ export default defineConfig({
     vue(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'maskable-icon.png'],
+      includeAssets: ['favicon.ico', 'apple-touch-icon.jpg', 'maskable-icon.jpg'],
       manifest: {
         name: 'Brave Mentor',
         short_name: 'BraveMentor',
@@ -16,19 +16,19 @@ export default defineConfig({
         theme_color: '#0f172a',
         icons: [
           {
-            src: 'pwa-192x192.png',
+            src: 'pwa-192x192.jpg',
             sizes: '192x192',
-            type: 'image/png'
+            type: 'image/jpeg'
           },
           {
-            src: 'pwa-512x512.png',
+            src: 'pwa-512x512.jpg',
             sizes: '512x512',
-            type: 'image/png'
+            type: 'image/jpeg'
           },
           {
-            src: 'maskable-icon.png',
+            src: 'maskable-icon.jpg',
             sizes: '512x512',
-            type: 'image/png',
+            type: 'image/jpeg',
             purpose: 'maskable'
           }
         ]
