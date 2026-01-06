@@ -1,7 +1,17 @@
 <script setup>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { API_URL } from '../config';
+import { API_URL } from '../../../config';
+import { marked } from 'marked'; // Assuming marked is available as it was used elsewhere, or I will use a simple fallback.
+
+const formatMarkdown = (text) => {
+    if (!text) return '';
+    try {
+        return marked.parse(text);
+    } catch (e) {
+        return text.replace(/\n/g, '<br>');
+    }
+};
 
 const router = useRouter();
 const topic = ref('');
@@ -156,6 +166,26 @@ const reset = () => {
             </button>
             <button @click="reset" class="btn-text">Start Over</button>
           </div>
+        </div>
+
+        <!-- NEW: Participant Intelligence Dropdown -->
+        <div class="brief-card full-width" v-if="brief.researchResults && brief.researchResults.length > 0">
+           <h3>Participant Intelligence</h3>
+           <div class="research-accordion">
+              <details v-for="(p, index) in brief.researchResults" :key="index" class="participant-details">
+                 <summary>
+                    <span class="p-summary-name">{{ p.name }}</span>
+                    <span v-if="p.company" class="p-summary-company">@ {{ p.company }}</span>
+                    <span class="dropdown-icon">▼</span>
+                 </summary>
+                 <div class="p-content">
+                    <div class="p-meta">
+                       <strong>Email:</strong> {{ p.email }}
+                    </div>
+                    <div class="p-research-data" v-html="formatMarkdown(p.data)"></div>
+                 </div>
+              </details>
+           </div>
         </div>
 
         <div class="brief-card">
@@ -432,14 +462,84 @@ li {
   .full-width {
     grid-column: span 1;
   }
-  .input-row {
-    flex-direction: column;
-    align-items: stretch;
-  }
   .btn-remove {
     position: relative;
     width: 100%;
     margin-top: 0.5rem;
   }
+}
+
+/* Accordion Styles */
+.research-accordion {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.participant-details {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.participant-details summary {
+  padding: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  font-weight: 600;
+  list-style: none; /* Hide default triangle */
+  position: relative;
+}
+
+.participant-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.p-summary-name {
+  color: white;
+  margin-right: 0.5rem;
+}
+
+.p-summary-company {
+  color: var(--text-secondary);
+  font-weight: 400;
+  font-size: 0.9rem;
+}
+
+.dropdown-icon {
+  margin-left: auto;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  transition: transform 0.2s;
+}
+
+.participant-details[open] .dropdown-icon {
+  transform: rotate(180deg);
+}
+
+.p-content {
+  padding: 1rem 1.5rem 1.5rem 1.5rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.p-meta {
+  margin-bottom: 1rem;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.p-research-data :deep(h1), .p-research-data :deep(h2), .p-research-data :deep(h3) {
+  margin-top: 0;
+  font-size: 1rem;
+  color: var(--accent-primary);
+}
+
+.p-research-data :deep(strong) {
+  color: white;
 }
 </style>

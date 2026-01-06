@@ -1,6 +1,6 @@
 <script setup>
 import { useRouter } from 'vue-router';
-import { API_URL } from '../config';
+import { API_URL } from '../../config';
 
 const router = useRouter();
 
@@ -38,8 +38,8 @@ const handleLogout = async () => {
         <router-link to="/home" class="nav-item" active-class="active">
           <span class="icon">🕒</span> Previous Meetings
         </router-link>
-        <router-link to="/process" class="nav-item" active-class="active">
-          <span class="icon">➕</span> New Meeting
+        <router-link to="/preparation" class="nav-item" active-class="active">
+          <span class="icon">📝</span> Meeting Preparation
         </router-link>
         <router-link to="/whatsapp" class="nav-item" active-class="active">
           <span class="icon" style="color: #25D366; display: flex; align-items: center; justify-content: center;">
@@ -50,9 +50,6 @@ const handleLogout = async () => {
         </router-link>
         <router-link to="/opportunities" class="nav-item" active-class="active">
           <span class="icon">✨</span> New Opportunities
-        </router-link>
-        <router-link to="/preparation" class="nav-item" active-class="active">
-          <span class="icon">📝</span> Meeting Preparation
         </router-link>
       </div>
 

@@ -68,36 +68,12 @@ app.use(passport.session());
 const authRoutes = require('./routes/auth');
 const apiRoutes = require('./routes/api');
 
-// Setup Auth Routes
-// Original: app.use('/api/auth', authRoutes(client.db('users')));
-// We can use a middleware to inject db or getter. 
-// Or better, let's change how authRoutes is initialized. 
-// But to minimize changes to files I haven't seen, let's try to replicate the `client` access.
+// Mount Auth Routes (legacy support: pass db, though controller handles it)
 const { getClient } = require('./config/db');
-// This `getClient()` returns the client instance immediately (initialized in db.js).
-// It might not be connected yet, but `client.db()` works on disconnected clients in latest drivers?
-// Usually yes, operations buffer.
-
 app.use('/api/auth', authRoutes(getClient().db('users')));
 
 // Mount API Routes
-app.use('/api', apiRoutes); // This will serve /api/upload, /api/history etc. 
-// WAIT: Original `/upload` was at root? No, `app.post('/upload', ...)`
-// So if I mount at `/api`, it becomes `/api/upload`. 
-// I should check if the frontend expects `/upload` or `/api/upload`.
-// Original code: `app.post('/upload'...)`. 
-// If I move it to `routes/api.js` and mount at `/api`, it changes to `/api/upload`.
-// This breaks frontend unless I update frontend or mount at root.
-// Let's mount at root `/` for `upload` and `/export-pdf` compatibility?
-// Or better: Route `/upload` and `/export-pdf` are separate from `/api/history` in original?
-// Original:
-// app.post('/upload' ...)
-// app.get('/api/history' ...)
-// app.get('/export-pdf/:meetingId' ...)
-
-// So `api.js` has mixed routes. 
-// Use specific mounts to preserve paths:
-app.use('/', apiRoutes);
+app.use('/', apiRoutes); // Mounts /upload, /api/history, /prepare, etc.
 // Note: `api.js` defines `/upload`, `/history`, `/export-pdf`.
 // If I mount `api.js` at `/`, then:
 // `/upload` -> `/upload` (Correct)
@@ -121,42 +97,19 @@ app.use('/', apiRoutes);
 const frontendDist = path.join(__dirname, '../frontend/dist');
 const fs = require('fs');
 
-console.log('--- DEBUG: FILESYSTEM CHECK ---');
-console.log(`Current __dirname: ${__dirname}`);
-console.log(`Target frontendDist: ${frontendDist}`);
-
-try {
-    console.log(`Contents of /app:`, fs.readdirSync(path.join(__dirname, '..')));
-} catch (e) {
-    console.log(`Cannot list /app: ${e.message}`);
-}
-
-try {
-    console.log(`Contents of /app/frontend:`, fs.readdirSync(path.join(__dirname, '../frontend')));
-} catch (e) {
-    console.log(`Cannot list /app/frontend: ${e.message}`);
-}
-console.log('--- END DEBUG ---');
-
-// Serve static files (Priority: Check if dist exists, regardless of mode)
 if (fs.existsSync(frontendDist)) {
     console.log(`Serving static files from ${frontendDist}`);
     app.use(express.static(frontendDist));
 
-    // Handle SPA fallback
     app.get(/(.*)/, (req, res) => {
-        // Fallback for non-API routes
         if (!req.path.startsWith('/api') && !req.path.startsWith('/auth')) {
             res.sendFile(path.join(frontendDist, 'index.html'));
         } else {
             res.status(404).json({ error: 'Endpoint not found' });
         }
     });
-} else {
-    // Only log warning if in production, to avoid noise in dev
-    if (process.env.NODE_ENV === 'production') {
-        console.error(`WARNING: Frontend dist not found at ${frontendDist}`);
-    }
+} else if (process.env.NODE_ENV === 'production') {
+    console.error(`WARNING: Frontend dist not found at ${frontendDist}`);
 }
 
 // Passport Config Injection

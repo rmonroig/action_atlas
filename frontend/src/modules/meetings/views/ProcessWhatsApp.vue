@@ -1,8 +1,8 @@
 <script setup>
 import { ref } from 'vue';
-import FileDrop from './FileDrop.vue';
-import WhatsAppResult from './WhatsAppResult.vue';
-import { API_URL } from '../config';
+import FileDrop from '../../../components/ui/FileDrop.vue';
+import WhatsAppResult from '../components/WhatsAppResult.vue';
+import { API_URL } from '../../../config';
 
 const appState = ref('idle'); // idle, uploading, success
 const resultData = ref(null);

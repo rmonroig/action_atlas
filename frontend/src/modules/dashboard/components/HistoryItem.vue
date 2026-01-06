@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, watch } from 'vue';
-import MeetingIntelligence from './MeetingIntelligence.vue';
-import { API_URL } from '../config';
+import MeetingIntelligence from '../../meetings/views/MeetingIntelligence.vue';
+import { API_URL } from '../../../config';
 
 const props = defineProps({
   item: {
@@ -42,11 +42,66 @@ const structuredSummary = computed(() => {
   return null;
 });
 
+const displayTitle = computed(() => {
+  if (props.item.topic) return props.item.topic;
+  if (props.item.originalName) return props.item.originalName;
+  return props.item.filename || 'Untitled Meeting';
+});
+
 const formatDate = (dateString) => {
   const date = new Date(dateString);
   return date.toLocaleString();
 };
 
+const participants = ref([]);
+const loadingParticipants = ref(false);
+const markedLoaded = ref(false);
+
+// We need marked for formatting research
+import { marked } from 'marked';
+
+const formatMarkdown = (text) => {
+    if (!text) return '';
+    try {
+        return marked.parse(text);
+    } catch (e) {
+        return text.replace(/\n/g, '<br>');
+    }
+};
+
+const fetchParticipants = async () => {
+    if (participants.value.length > 0 || loadingParticipants.value) return;
+    
+    loadingParticipants.value = true;
+    try {
+        const token = localStorage.getItem('token');
+        const res = await fetch(`${API_URL}/meeting/${props.item.meetingId}`, {
+             headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+            const data = await res.json();
+            if (data.participants) {
+                participants.value = data.participants;
+            }
+        }
+    } catch (e) {
+        console.error("Failed to fetch participants for history item", e);
+    } finally {
+        loadingParticipants.value = false;
+    }
+};
+
+// Fetch when Outcomes tab is active and we don't have them yet
+watch([() => showDetails.value, activeTab], ([isOpen, tab]) => {
+    if (isOpen && tab === 'outcomes') {
+        // Also check if we need to fetch. For 'preparation' tab we usually have brief data in item.
+        // But research participants are separate. Actually, Preparation view has researching in brief?
+        // Wait, standard Preparation returns brief.researchResults.
+        // Standard Upload returns participants array.
+        // Let's fetch to be sure we get the full participant objects from DB which links meetingId.
+        fetchParticipants();
+    }
+});
 </script>
 
 <template>
@@ -59,7 +114,7 @@ const formatDate = (dateString) => {
         <span class="icon" v-else>📄</span>
         
         <div class="title-meta">
-          <span class="filename">{{ item.filename }}</span>
+          <span class="filename">{{ displayTitle }}</span>
           <span class="date">{{ formatDate(item.timestamp) }}</span>
         </div>
       </div>
@@ -129,6 +184,30 @@ const formatDate = (dateString) => {
             </div>
             <!-- Standard Meeting Display -->
             <MeetingIntelligence v-else :summary="item.summary" />
+
+            <!-- Participants Section -->
+            <div v-if="participants.length > 0" class="participants-history-section fade-in">
+                <h3>Participant Intelligence</h3>
+                <div class="research-accordion">
+                    <details v-for="p in participants" :key="p.email" class="participant-details">
+                        <summary>
+                            <span class="p-summary-name">{{ p.name }}</span>
+                            <span class="p-summary-company" v-if="p.company">({{ p.company }})</span>
+                            <span class="dropdown-icon">▼</span>
+                        </summary>
+                        <div class="p-content">
+                            <div class="p-meta">
+                                <strong>Email:</strong> {{ p.email }}
+                            </div>
+                            <div v-if="p.researchData" class="p-research-data" v-html="formatMarkdown(p.researchData)"></div>
+                            <p v-else class="p-no-data">No research data available.</p>
+                        </div>
+                    </details>
+                </div>
+            </div>
+            <div v-else-if="loadingParticipants" class="p-loading">
+                Loading participants...
+            </div>
         </div>
 
         <div class="actions-row">
@@ -458,4 +537,106 @@ const formatDate = (dateString) => {
 .wa-actions li {
     margin-bottom: 0.5rem;
 }
+
+.p-loading {
+    margin-top: 1rem;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    font-style: italic;
+}
+
+.participants-history-section {
+    margin-top: 2rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding-top: 1.5rem;
+}
+
+.participants-history-section h3 {
+    margin-top: 0;
+    color: var(--accent-primary);
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+}
+
+/* Accordion Styles */
+.research-accordion {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.participant-details {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.participant-details summary {
+  padding: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  font-weight: 600;
+  list-style: none; 
+  position: relative;
+  color: white;
+}
+
+.participant-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.p-summary-name {
+  color: white;
+  margin-right: 0.5rem;
+  font-size: 1rem;
+}
+
+.p-summary-company {
+  color: var(--text-secondary);
+  font-weight: 400;
+  font-size: 0.9rem;
+}
+
+.dropdown-icon {
+  margin-left: auto;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  transition: transform 0.2s;
+}
+
+.participant-details[open] .dropdown-icon {
+  transform: rotate(180deg);
+}
+
+.p-content {
+  padding: 1rem 1.5rem 1.5rem 1.5rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.p-meta {
+  margin-bottom: 1rem;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.p-research-data :deep(h1), .p-research-data :deep(h2), .p-research-data :deep(h3) {
+  margin-top: 0;
+  font-size: 1rem;
+  color: var(--accent-primary);
+}
+
+.p-research-data :deep(strong) {
+  color: white;
+}
+
+.p-no-data {
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
 </style>

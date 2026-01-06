@@ -1,5 +1,5 @@
 import { mount } from '@vue/test-utils';
-import Home from '../Home.vue';
+import Home from '../../../../modules/dashboard/views/Home.vue';
 
 describe('Home.vue', () => {
     it('renders intelligence hub title', () => {

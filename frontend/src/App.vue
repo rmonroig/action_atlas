@@ -1,7 +1,7 @@
 <script setup>
 import { computed } from 'vue';
 import { useRoute } from 'vue-router';
-import Sidebar from './components/Sidebar.vue';
+import Sidebar from './components/ui/Sidebar.vue';
 
 const route = useRoute();
 const isAuthPage = computed(() => {

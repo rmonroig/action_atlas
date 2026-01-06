@@ -1,7 +1,7 @@
 <script setup>
 import { computed } from 'vue';
-import MeetingIntelligence from './MeetingIntelligence.vue';
-import { API_URL } from '../config';
+import MeetingIntelligence from '../views/MeetingIntelligence.vue';
+import { API_URL } from '../../../config';
 
 const props = defineProps({
   result: {
@@ -48,32 +48,25 @@ const formatMarkdown = (text) => {
         <MeetingIntelligence :summary="result.summary" />
       </div>
 
+      <!-- Participant Intelligence (Restored) -->
       <div v-if="result.participants && result.participants.length > 0" class="participants-section">
         <h3>Participant Intelligence</h3>
-        <div class="participants-grid">
-          <div v-for="(p, index) in result.participants" :key="index" class="participant-info-card">
-            <div class="participant-header">
-              <span class="avatar">👤</span>
-              <div class="name-box">
-                <div class="name-row">
-                  <span class="p-name">{{ p.name || 'Unknown Participant' }}</span>
-                  <span v-if="p.company" class="p-company">@ {{ p.company }}</span>
-                  <span v-if="getCertaintyLevel(p.researchData)" 
-                        :class="['c-badge', getCertaintyLevel(p.researchData).toLowerCase()]">
-                    {{ getCertaintyLevel(p.researchData) }}
-                  </span>
-                </div>
-                <span class="p-email">{{ p.email }}</span>
+        <div class="research-accordion">
+           <details v-for="(p, index) in result.participants" :key="index" class="participant-details">
+              <summary>
+                 <span class="p-summary-name">{{ p.name }}</span>
+                 <span v-if="p.company" class="p-summary-company">@ {{ p.company }}</span>
+                 <span class="dropdown-icon">▼</span>
+              </summary>
+              <div class="p-content">
+                 <div class="p-meta">
+                    <strong>Email:</strong> {{ p.email }}
+                 </div>
+                 <!-- Using researchData or researchResults structure -->
+                 <div v-if="p.researchData" class="p-research-data" v-html="formatMarkdown(p.researchData.data || p.researchData)"></div>
+                 <div v-else class="p-no-data">No extended research available.</div>
               </div>
-            </div>
-            <div class="research-data">
-              <div class="data-text" v-if="p.researchData" v-html="formatMarkdown(p.researchData)">
-              </div>
-              <div class="data-pending" v-else>
-                Research information not available.
-              </div>
-            </div>
-          </div>
+           </details>
         </div>
       </div>
     </div>
@@ -194,6 +187,88 @@ h3 {
   padding: 1.5rem;
   border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+
+/* Accordion Styles (Shared with Preparation.vue - could be a component but adhering to single file structure for now) */
+.research-accordion {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.participant-details {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.participant-details summary {
+  padding: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  font-weight: 600;
+  list-style: none; /* Hide default triangle */
+  position: relative;
+  color: white;
+}
+
+.participant-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.p-summary-name {
+  color: white;
+  margin-right: 0.5rem;
+  font-size: 1rem;
+}
+
+.p-summary-company {
+  color: var(--text-secondary);
+  font-weight: 400;
+  font-size: 0.9rem;
+}
+
+.dropdown-icon {
+  margin-left: auto;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  transition: transform 0.2s;
+}
+
+.participant-details[open] .dropdown-icon {
+  transform: rotate(180deg);
+}
+
+.p-content {
+  padding: 1rem 1.5rem 1.5rem 1.5rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.p-meta {
+  margin-bottom: 1rem;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.p-research-data :deep(h1), .p-research-data :deep(h2), .p-research-data :deep(h3) {
+  margin-top: 0;
+  font-size: 1rem;
+  color: var(--accent-primary);
+}
+
+.p-research-data :deep(strong) {
+  color: white;
+}
+
+.p-no-data {
+  color: var(--text-secondary);
+  font-style: italic;
 }
 
 .participant-header {
