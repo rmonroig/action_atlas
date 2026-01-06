@@ -28,9 +28,9 @@ describe('PWA Configuration and Assets', () => {
 
     const requiredAssets = [
         'favicon.ico',
-        'pwa-192x192.png',
-        'pwa-512x512.png',
-        'maskable-icon.jpg',
+        'icon-v2-192x192.jpg',
+        'icon-v2-512x512.jpg',
+        'icon-v2-maskable.jpg',
         'apple-touch-icon.jpg'
     ];
 
