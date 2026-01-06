@@ -5,9 +5,9 @@ const path = require('path');
 const fs = require('fs');
 const jwt = require('jsonwebtoken');
 
-const { handleUpload, handleWhatsAppUpload } = require('../controllers/uploadController');
-const { getHistory } = require('../controllers/historyController');
-const { exportPdf } = require('../controllers/exportController');
+const meetingController = require('../controllers/meetingController');
+const researchController = require('../controllers/researchController');
+const exportController = require('../controllers/exportController');
 
 // Ensure uploads directory exists
 const uploadDir = path.join(__dirname, '../uploads');
@@ -26,7 +26,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 
-// JWT Middleware (Moved locally or imported if widely used)
+// JWT Middleware
 const JWT_SECRET = process.env.JWT_SECRET || 'secret';
 const authenticateJWT = (req, res, next) => {
     const authHeader = req.headers.authorization;
@@ -34,9 +34,8 @@ const authenticateJWT = (req, res, next) => {
         const token = authHeader.split(' ')[1];
         jwt.verify(token, JWT_SECRET, (err, user) => {
             if (err) {
-                // Proceed without user if invalid, matching original logic
                 console.log("JWT Verification failed:", err.message);
-                return next();
+                return next(); // Proceed unauthenticated (matching legacy behavior)
             }
             req.user = user;
             next();
@@ -47,13 +46,11 @@ const authenticateJWT = (req, res, next) => {
 };
 
 // Routes
-const { handlePreparation } = require('../controllers/preparationController');
-
-// Routes
-router.post('/upload', authenticateJWT, upload.single('file'), handleUpload);
-router.post('/upload-whatsapp', authenticateJWT, upload.single('file'), handleWhatsAppUpload);
-router.post('/prepare', authenticateJWT, handlePreparation);
-router.get('/api/history', authenticateJWT, getHistory);
-router.get('/export-pdf/:meetingId', exportPdf);
+router.post('/upload', authenticateJWT, upload.single('file'), meetingController.handleUpload);
+router.post('/upload-whatsapp', authenticateJWT, upload.single('file'), meetingController.handleWhatsAppUpload);
+router.post('/prepare', authenticateJWT, researchController.handlePreparation);
+router.get('/meeting/:id', authenticateJWT, meetingController.getMeeting);
+router.get('/api/history', authenticateJWT, meetingController.getHistory);
+router.get('/export-pdf/:meetingId', exportController.exportPdf);
 
 module.exports = router;

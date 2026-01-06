@@ -194,9 +194,35 @@ async function generateMeetingBrief(topic, participants) {
         const result = await model.generateContent(prompt);
         const response = await result.response;
         let content = response.text();
-        content = content.replace(/^```json\n?/, '').replace(/\n?```$/, '').trim();
 
-        return content;
+        // Robust cleanup: find first '{' and last '}'
+        const firstBrace = content.indexOf('{');
+        const lastBrace = content.lastIndexOf('}');
+
+        if (firstBrace !== -1 && lastBrace !== -1) {
+            content = content.substring(firstBrace, lastBrace + 1);
+        }
+
+        // Handle Gemini returning json markdown wrapping
+        // content = content.replace(/^```json\n?/, '').replace(/\n?```$/, '').trim(); // Legacy
+
+        let briefData;
+        try {
+            briefData = JSON.parse(content);
+        } catch (e) {
+            console.error("JSON Parse Error. Raw content:", content);
+            throw new Error("Failed to parse AI response");
+        }
+
+        return JSON.stringify({
+            briefData: briefData,
+            researchResults: participants.map((p, i) => ({
+                name: p.name,
+                email: p.email,
+                company: p.company,
+                data: researchResults[i]
+            }))
+        });
 
     } catch (error) {
         console.error("Meeting Preparation Error:", error);

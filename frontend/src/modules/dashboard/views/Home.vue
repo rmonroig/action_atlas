@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue';
-import HistoryItem from './HistoryItem.vue';
-import { API_URL } from '../config';
+import HistoryItem from '../components/HistoryItem.vue';
+import { API_URL } from '../../../config';
 
 const history = ref([]);
 const isLoadingHistory = ref(false);
@@ -13,7 +13,7 @@ const filteredHistory = computed(() => {
     return history.value.filter(item => item.type === 'whatsapp');
   }
   if (filterType.value === 'meeting') {
-    return history.value.filter(item => !item.type || item.type === 'meeting');
+    return history.value.filter(item => !item.type || ['meeting', 'standard', 'preparation'].includes(item.type));
   }
   return history.value;
 });

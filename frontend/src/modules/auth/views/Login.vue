@@ -66,9 +66,9 @@
               <span>or</span>
             </div>
 
-            <button type="button" class="btn-google" @click="loginWithGoogle">
+            <button type="button" class="btn-google" @click="loginWithGoogle" title="Coming Soon">
               <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" />
-              Continue with Google
+              Continue with Google (Coming Soon)
             </button>
 
             <button type="button" class="btn-secondary" @click="router.push('/test')">
@@ -89,7 +89,7 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
-import { API_URL } from '../config';
+import { API_URL } from '../../../config';
 
 const email = ref('');
 const password = ref('');
@@ -122,7 +122,8 @@ async function onSubmit() {
 }
 
 function loginWithGoogle() {
-  window.location.href = `${API_URL}/api/auth/google`;
+  alert("Google Authentication is coming soon! Please use email/password for now.");
+  // window.location.href = `${API_URL}/api/auth/google`;
 }
 </script>
 

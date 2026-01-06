@@ -1,14 +1,14 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import Home from './components/Home.vue';
-import Login from './components/Login.vue';
-import AuthSuccess from './components/AuthSuccess.vue';
-import Register from './components/Register.vue';
-import ProcessMeeting from './components/ProcessMeeting.vue';
-import ProcessWhatsApp from './components/ProcessWhatsApp.vue'; // Import
-import Opportunities from './components/Opportunities.vue';
-import Preparation from './components/Preparation.vue';
-import Profile from './components/Profile.vue';
-import VerifyEmail from './components/VerifyEmail.vue'; // Import
+import Home from './modules/dashboard/views/Home.vue';
+import Login from './modules/auth/views/Login.vue';
+import AuthSuccess from './modules/auth/views/AuthSuccess.vue';
+import Register from './modules/auth/views/Register.vue';
+import ProcessMeeting from './modules/meetings/views/ProcessMeeting.vue';
+import ProcessWhatsApp from './modules/meetings/views/ProcessWhatsApp.vue';
+import Opportunities from './modules/meetings/views/Opportunities.vue';
+import Preparation from './modules/meetings/views/Preparation.vue';
+import Profile from './modules/dashboard/views/Profile.vue';
+import VerifyEmail from './modules/auth/views/VerifyEmail.vue';
 
 const routes = [
     { path: '/', name: 'Home', component: Home, meta: { requiresAuth: true } },

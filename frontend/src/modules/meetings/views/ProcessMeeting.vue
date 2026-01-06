@@ -1,45 +1,28 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
-import FileDrop from './FileDrop.vue';
-import SummaryResult from './SummaryResult.vue';
-import { API_URL } from '../config';
+import FileDrop from '../../../components/ui/FileDrop.vue';
+import SummaryResult from '../components/SummaryResult.vue';
+import { API_URL } from '../../../config';
 
 const route = useRoute();
 const appState = ref('idle'); // idle, uploading, success
 const summaryResult = ref(null);
-const participants = ref([{ email: '', name: '', company: '' }]);
 const selectedLanguage = ref('English'); // Default to English
 const isAuthenticated = ref(!!localStorage.getItem('token'));
 const existingMeetingId = ref(null);
 
-onMounted(() => {
+onMounted(async () => {
   if (route.query.id) {
     existingMeetingId.value = route.query.id;
     console.log("Linking to prepared meeting:", existingMeetingId.value);
   }
 });
 
-const addParticipant = () => {
-  participants.value.push({ email: '', name: '', company: '' });
-};
-
-const removeParticipant = (index) => {
-  if (participants.value.length > 1) {
-    participants.value.splice(index, 1);
-  } else {
-    participants.value[0] = { email: '', name: '', company: '' };
-  }
-};
-
 const handleFileSelected = async (file) => {
   appState.value = 'uploading';
   const formData = new FormData();
   formData.append('file', file);
-  
-  // Filter out empty participants (obligatory email)
-  const validParticipants = participants.value.filter(p => p.email.trim() !== '');
-  formData.append('participants', JSON.stringify(validParticipants));
   formData.append('language', selectedLanguage.value);
 
   if (existingMeetingId.value) {
@@ -76,7 +59,6 @@ const handleFileSelected = async (file) => {
 const resetApp = () => {
   appState.value = 'idle';
   summaryResult.value = null;
-  participants.value = [{ email: '', name: '' }];
 };
 </script>
 
@@ -121,7 +103,7 @@ const resetApp = () => {
           
           <div v-else-if="appState === 'uploading'" class="loading-state">
             <div class="spinner"></div>
-            <p>Analyzing Audio Waveforms & Researching Participants...</p>
+            <p>Analyzing Audio Waveforms...</p>
           </div>
           
           <div v-else-if="appState === 'success'">
@@ -132,44 +114,7 @@ const resetApp = () => {
           </div>
         </div>
 
-        <aside v-if="appState === 'idle'" class="participants-section">
-          <div class="section-header">
-            <h3>Meeting Participants</h3>
-            <span class="badge">Research Beta</span>
-          </div>
-          <p class="section-hint">Emails are obligatory, names are optional.</p>
-          
-          <div class="participants-list">
-            <div v-for="(p, index) in participants" :key="index" class="participant-row">
-              <div class="input-row">
-                <input 
-                  type="email" 
-                  v-model="p.email" 
-                  placeholder="Email (Required)" 
-                  class="modern-input"
-                  required
-                />
-                <input 
-                  type="text" 
-                  v-model="p.name" 
-                  placeholder="Name (Optional)" 
-                  class="modern-input"
-                />
-                <input 
-                  type="text" 
-                  v-model="p.company" 
-                  placeholder="Company (Optional)" 
-                  class="modern-input"
-                />
-                <button @click="removeParticipant(index)" class="btn-remove" title="Remove">×</button>
-              </div>
-            </div>
-          </div>
-          
-          <button @click="addParticipant" class="btn-add">
-            <span class="plus-icon">+</span> Add Participant
-          </button>
-        </aside>
+        <!-- Participants Research removed from Upload as requested -->
       </main>
     </div>
   </div>

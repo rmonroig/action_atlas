@@ -1,25 +1,52 @@
 const PDFDocument = require('pdfkit');
-const { getSummaryCollection, getParticipantsCollection } = require('../config/db');
+const AudioMeeting = require('../models/AudioMeeting');
+const ParticipantResearch = require('../models/ParticipantResearch');
+const { getAuthDb } = require('../config/db');
+
+function getDb() { return getAuthDb(); }
 
 async function exportPdf(req, res) {
     try {
         const { meetingId } = req.params;
-        const summaryCollection = getSummaryCollection();
-        const participantsCollection = getParticipantsCollection();
+        const db = getDb();
 
-        if (!summaryCollection) {
-            return res.status(503).json({ error: 'Database not initialized' });
+        // Support both ObjectId and legacy ID lookup?
+        // AudioMeeting model supports findById (ObjectId)
+        // If meetingId is legacy (string timestamp), we might fail if we only use findById.
+        // But the new controllers return `_id` (ObjectId).
+        // So assuming frontend now passes ObjectId.
+        // If frontend passes legacy ID, we might need a fallback find.
+        // Let's assume ObjectId for now as we are refactoring.
+        // Actually, let's make findById robust in AudioMeeting or use logic here.
+
+        let meeting = await AudioMeeting.findById(db, meetingId);
+
+        // Fallback for legacy IDs (timestamp strings) if not found by ObjectId
+        if (!meeting) {
+            const collection = db.collection('audio_meetings');
+            meeting = await collection.findOne({ meetingId: meetingId });
         }
-
-        const meeting = await summaryCollection.findOne({ meetingId: meetingId });
 
         if (!meeting) {
             return res.status(404).json({ error: "Meeting not found" });
         }
 
+        // Fetch participants
         let participants = [];
-        if (participantsCollection) {
-            participants = await participantsCollection.find({ meetingId: meetingId }).toArray();
+        // Try new model first
+        participants = await ParticipantResearch.findByMeetingId(db, meeting._id);
+
+        // If none found, check if they are legacy embedded or strictly in new table
+        // New logic saves them to ParticipantResearch. 
+        // Legacy data might not be there.
+        // If legacy, we might find them in `meeting.participants` if we had migrated? 
+        // Or in legacy `participants` collection with `meetingId` string.
+        if (participants.length === 0) {
+            const pCollection = db.collection('participants');
+            // legacy collection name might differ? `getParticipantsCollection` used `participants`
+            if (pCollection) {
+                participants = await pCollection.find({ meetingId: meetingId }).toArray();
+            }
         }
 
         const doc = new PDFDocument({ margin: 50 });
