@@ -16,17 +16,17 @@ export default defineConfig({
         theme_color: '#0f172a',
         icons: [
           {
-            src: 'pwa-192x192.jpg',
+            src: 'icon-v2-192x192.jpg',
             sizes: '192x192',
             type: 'image/jpeg'
           },
           {
-            src: 'pwa-512x512.jpg',
+            src: 'icon-v2-512x512.jpg',
             sizes: '512x512',
             type: 'image/jpeg'
           },
           {
-            src: 'maskable-icon.jpg',
+            src: 'icon-v2-maskable.jpg',
             sizes: '512x512',
             type: 'image/jpeg',
             purpose: 'maskable'
