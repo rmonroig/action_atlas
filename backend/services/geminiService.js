@@ -43,12 +43,26 @@ async function transcribeAudio(filePath, mimeType, language = 'English') {
 /**
  * Agent 2: Summarization & Extraction Agent
  */
-async function summarizeText(text, language = 'English') {
+async function summarizeText(text, language = 'English', context = null) {
     try {
         const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
+        let promptContext = '';
+        if (context) {
+            promptContext = `
+            Context from Meeting Preparation:
+            Title: ${context.topic || 'Unknown'}
+            ${context.talkingPoints ? `Planned Talking Points: ${context.talkingPoints.join(', ')}` : ''}
+            ${context.questions ? `Planned Questions: ${context.questions.join(', ')}` : ''}
+            
+            Use this context to align the summary with the meeting's original intent and verify if planned points were discussed.
+            `;
+        }
+
         const prompt = `
         Summarize the following transcript in ${language} into structured JSON.
+        ${promptContext}
+
         Format the response as a JSON object with these keys:
         - "outcomes": array of long strings (provide detailed and comprehensive explanations of key outcomes)
         - "decisions": array of strings (briefly state any final decisions made)

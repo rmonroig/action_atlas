@@ -184,6 +184,30 @@ watch([() => showDetails.value, activeTab], ([isOpen, tab]) => {
             </div>
             <!-- Standard Meeting Display -->
             <MeetingIntelligence v-else :summary="item.summary" />
+
+            <!-- Participants Section -->
+            <div v-if="participants.length > 0" class="participants-history-section fade-in">
+                <h3>Participant Intelligence</h3>
+                <div class="research-accordion">
+                    <details v-for="p in participants" :key="p.email" class="participant-details">
+                        <summary>
+                            <span class="p-summary-name">{{ p.name }}</span>
+                            <span class="p-summary-company" v-if="p.company">({{ p.company }})</span>
+                            <span class="dropdown-icon">▼</span>
+                        </summary>
+                        <div class="p-content">
+                            <div class="p-meta">
+                                <strong>Email:</strong> {{ p.email }}
+                            </div>
+                            <div v-if="p.researchData" class="p-research-data" v-html="formatMarkdown(p.researchData)"></div>
+                            <p v-else class="p-no-data">No research data available.</p>
+                        </div>
+                    </details>
+                </div>
+            </div>
+            <div v-else-if="loadingParticipants" class="p-loading">
+                Loading participants...
+            </div>
         </div>
 
         <div class="actions-row">

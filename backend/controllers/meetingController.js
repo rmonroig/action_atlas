@@ -39,9 +39,27 @@ exports.handleUpload = async (req, res) => {
     try {
         console.log(`[Meeting] Starting process for ${req.file.originalname}`);
 
-        // 1. Transcribe & Summarize
+        // Fetch preparation context if linked
+        let prepContext = null;
+        if (req.body.meetingId) {
+            try {
+                const existingMeeting = await AudioMeeting.findById(db, req.body.meetingId);
+                if (existingMeeting) {
+                    prepContext = {
+                        topic: existingMeeting.topic,
+                        talkingPoints: existingMeeting.brief?.talkingPoints,
+                        questions: existingMeeting.brief?.questions
+                    };
+                    console.log(`[Meeting] Found preparation context: ${existingMeeting.topic}`);
+                }
+            } catch (e) {
+                console.warn("[Meeting] Failed to fetch preparation context:", e);
+            }
+        }
+
+        // 1. Transcribe & Summarize (with context)
         const transcript = await transcribeAudio(req.file.path, req.file.mimetype, language);
-        const summary = await summarizeText(transcript, language);
+        const summary = await summarizeText(transcript, language, prepContext);
 
         // 2. Prepare Meeting Data
         const meetingData = {

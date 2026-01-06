@@ -51,7 +51,7 @@ onMounted(() => {
          <h1>Intelligence hub</h1>
          <p class="subtitle">Actionable insights from your meetings</p>
       </div>
-      <router-link to="/process" class="new-meeting-btn">
+      <router-link to="/preparation" class="new-meeting-btn">
         <span class="plus">+</span> New Meeting
       </router-link>
     </header>
