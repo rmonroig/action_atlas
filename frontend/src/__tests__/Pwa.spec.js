@@ -30,6 +30,7 @@ describe('PWA Configuration and Assets', () => {
         'favicon.ico',
         'icon-v2-192x192.jpg',
         'icon-v2-512x512.jpg',
+        'icon-v2-512x512.png',
         'icon-v2-maskable.jpg',
         'apple-touch-icon.jpg'
     ];
