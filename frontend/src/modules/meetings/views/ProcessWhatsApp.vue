@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import FileDrop from '../../../components/ui/FileDrop.vue';
 import WhatsAppResult from '../components/WhatsAppResult.vue';
 import { API_URL } from '../../../config';
@@ -46,6 +46,41 @@ const resetApp = () => {
   appState.value = 'idle';
   resultData.value = null;
 };
+
+// Check for shared files from PWA Share Target
+const checkSharedFiles = async () => {
+  if (!('indexedDB' in window)) return;
+
+  const dbRequest = indexedDB.open('share-target-db', 1);
+  
+  dbRequest.onsuccess = (e) => {
+    const db = e.target.result;
+    if (!db.objectStoreNames.contains('shared-files')) return;
+
+    const tx = db.transaction('shared-files', 'readwrite');
+    const store = tx.objectStore('shared-files');
+    const getAllRequest = store.getAll();
+
+    getAllRequest.onsuccess = () => {
+      const items = getAllRequest.result;
+      if (items && items.length > 0) {
+        // Take the last shared file
+        const lastItem = items[items.length - 1];
+        console.log('Found shared file:', lastItem.file.name);
+        
+        // Auto-select the file
+        handleFileSelected(lastItem.file);
+
+        // cleanup
+        store.clear();
+      }
+    };
+  };
+};
+
+onMounted(() => {
+  checkSharedFiles();
+});
 </script>
 
 <template>

@@ -36,7 +36,7 @@ const handleLogout = async () => {
       <div class="nav-group">
         <h3>Workspace</h3>
         <router-link to="/home" class="nav-item" active-class="active">
-          <span class="icon">🕒</span> Previous Meetings
+          <span class="icon">📊</span> Control Panel
         </router-link>
         <router-link to="/preparation" class="nav-item" active-class="active">
           <span class="icon">📝</span> Meeting Preparation
@@ -79,7 +79,17 @@ const handleLogout = async () => {
   background: #060a14; /* Differentiable dark navy */
   border-right: 1px solid var(--border-color);
   z-index: 100;
-  overflow: hidden; /* Remove scroll */
+  overflow-y: auto; /* Enable vertical scroll */
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 2px;
 }
 
 .sidebar-nav {
@@ -187,5 +197,41 @@ const handleLogout = async () => {
 .logout-btn:hover {
   background: rgba(239, 68, 68, 0.1);
   border-color: #ef4444;
+}
+
+@media (max-width: 1024px) {
+  .sidebar {
+    transform: translateX(-100%);
+  }
+
+  .sidebar.mobile-open {
+    transform: translateX(0);
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.5);
+  }
+}
+
+
+@media (max-height: 800px) {
+  .sidebar-nav {
+    padding: 1rem;
+    gap: 1rem;
+  }
+
+  .nav-group h3 {
+    margin-bottom: 0.5rem;
+  }
+
+  .nav-item {
+    padding: 0.5rem 0.75rem;
+  }
+
+  .nav-footer {
+    padding-top: 1rem;
+    gap: 0.5rem;
+  }
+
+  .logout-btn {
+    padding: 0.5rem 1rem;
+  }
 }
 </style>

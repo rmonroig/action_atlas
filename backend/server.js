@@ -18,17 +18,11 @@ connectToMongo().then(() => {
 // Configs
 const JWT_SECRET = process.env.JWT_SECRET || 'secret';
 
-console.log('--- ENVIRONMENT CHECK ---');
-console.log('NODE_ENV:', process.env.NODE_ENV);
-console.log('EMAIL_USER set:', !!process.env.EMAIL_USER);
-console.log('EMAIL_PASS set:', !!process.env.EMAIL_PASS);
-console.log('EMAIL_SERVICE:', process.env.EMAIL_SERVICE || 'Default (Gmail)');
-console.log('FRONTEND_URL:', process.env.FRONTEND_URL || 'Default (localhost)');
-console.log('-------------------------');
+
 
 // Middleware
 app.use((req, res, next) => {
-    console.log(`[SERVER] Request ignored? Method: ${req.method}, Path: ${req.path}`);
+
     next();
 });
 app.use(cors());
@@ -98,7 +92,7 @@ const frontendDist = path.join(__dirname, '../frontend/dist');
 const fs = require('fs');
 
 if (fs.existsSync(frontendDist)) {
-    console.log(`Serving static files from ${frontendDist}`);
+
     app.use(express.static(frontendDist));
 
     app.get(/(.*)/, (req, res) => {
