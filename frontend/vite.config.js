@@ -7,6 +7,9 @@ export default defineConfig({
   plugins: [
     vue(),
     VitePWA({
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.js',
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.jpg', 'maskable-icon.jpg'],
       manifest: {
@@ -36,7 +39,23 @@ export default defineConfig({
             sizes: '512x512',
             type: 'image/png'
           }
-        ]
+        ],
+        share_target: {
+          action: '/whatsapp',
+          method: 'POST',
+          enctype: 'multipart/form-data',
+          params: {
+            title: 'title',
+            text: 'text',
+            url: 'url',
+            files: [
+              {
+                name: 'media',
+                accept: ['audio/*', 'audio/mp3', 'audio/wav', 'audio/ogg', 'audio/mpeg', 'audio/x-m4a', 'audio/opus', 'audio/amr', 'audio/3gpp']
+              }
+            ]
+          }
+        }
       }
     })
   ],

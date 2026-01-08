@@ -59,7 +59,7 @@ onMounted(() => {
     <section class="history-section">
       <div class="section-header">
         <div class="header-controls">
-          <h2>Previous Meetings</h2>
+          <h2>Control Panel</h2>
           <div class="filters">
             <button 
               :class="['filter-btn', { active: filterType === 'all' }]"
